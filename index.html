@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VideoLaris AI</title>
+</head>
+<body>
+
+<h1>AI Video Generator</h1>
+
+<input id="prompt" placeholder="Contoh: produk kopi estetik" />
+<button onclick="generate()">Buat Video</button>
+
+<p id="status"></p>
+<video id="video" controls width="300"></video>
+
+<script>
+let mode = "ads";
+
+function setMode(m) {
+  mode = m;
+}
+
+async function generate() {
+  const prompt = document.getElementById("prompt").value;
+
+  document.getElementById("status").innerText = "Mengirim request...";
+
+  const res = await fetch("/api/generate", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ prompt, mode })
+  });
+
+  const data = await res.json();
+
+  checkStatus(data.job_id);
+}
+
+function checkStatus(jobId) {
+  document.getElementById("status").innerText = "Memproses video...";
+
+  const interval = setInterval(async () => {
+    const res = await fetch(`/api/status?job_id=${jobId}`);
+    const data = await res.json();
+
+    if (data.status === "completed") {
+      clearInterval(interval);
+      document.getElementById("video").src = data.video_url;
+      document.getElementById("status").innerText = "Selesai!";
+    }
+
+    if (data.status === "failed") {
+      clearInterval(interval);
+      document.getElementById("status").innerText = "Gagal!";
+    }
+  }, 3000);
+}
+</script>
